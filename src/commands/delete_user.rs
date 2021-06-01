@@ -3,7 +3,7 @@ use diesel::{pg::PgConnection, QueryDsl, RunQueryDsl};
 
 use anyhow::{anyhow, Context};
 
-pub fn remove_user<'a>(connection: &PgConnection, id_number: i32) -> Result<usize, anyhow::Error> {
+pub fn remove_user(connection: &PgConnection, id_number: i32) -> Result<usize, anyhow::Error> {
     use super::super::schema::users::dsl::*;
 
     let all_users = show_users::display_users(connection);

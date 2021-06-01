@@ -6,7 +6,7 @@ pub fn insert_user<'a>(
     password: &'a str,
 ) -> super::super::models::User {
     let new_user = super::super::models::NewUser {
-        username: username,
+        username,
         password: &super::password_hasher::sha256_hasher(password),
     };
 

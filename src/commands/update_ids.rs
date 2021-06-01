@@ -1,6 +1,6 @@
 use diesel::{pg::PgConnection, RunQueryDsl};
 
-pub fn update<'a>(connection: &PgConnection) -> () {
+pub fn update(connection: &PgConnection) {
     use super::super::schema::users::dsl::*;
 
     let mut all_users = users

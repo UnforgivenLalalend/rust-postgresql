@@ -10,17 +10,17 @@ pub mod commands;
 fn main() {
     let connection = connection::establish_connection();
 
-    commands::update_ids::update(&connection);
+    commands::update_ids::update_ids(&connection);
 
-    commands::add_user::insert_user(&connection, "user", "hello");
-    // match commands::delete_user::remove_user(&connection, 4321) {
+    commands::add_user::add_user(&connection, "user", "hello");
+    // match commands::delete_user::delete_user(&connection, 4321) {
     //     Ok(_) => (),
     //     Err(err) => {
     //         println!("{}", err);
     //         std::process::exit(1)
     //     }
     // }
-    // println!("{:#?}", commands::show_users::display_users(&connection));
+    // println!("{:#?}", commands::show_users::show_users(&connection));
 
-    commands::update_ids::update(&connection);
+    commands::update_ids::update_ids(&connection);
 }

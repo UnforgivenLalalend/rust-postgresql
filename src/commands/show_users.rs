@@ -2,7 +2,7 @@ use diesel::{pg::PgConnection, RunQueryDsl};
 
 use crate::models::User;
 
-pub fn display_users(connection: &PgConnection) -> Vec<User> {
+pub fn show_users(connection: &PgConnection) -> Vec<User> {
     use super::super::schema::users::dsl::*;
 
     users

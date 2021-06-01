@@ -1,0 +1,14 @@
+[package]
+name = "rust-diesel"
+version = "0.1.0"
+authors = ["Lalalend <acc4anim@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.14"
+sha256 = "1.0.2"
+anyhow = "1.0.40"
+dotenv = "0.15.0"
+diesel = { version = "1.4.6", features = ["postgres"] }

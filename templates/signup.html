@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="/static/signup-page.css">
+</head>
+
+<body>
+    <div class="login-box">
+        <img src="/static/images/logo.png" width="100" height="50" class="login-logo">
+
+        <form action="" method="POST">
+            <div class="input-container">
+                <input id="email" name="email" type="mail" required="" class="input-field" />
+                <label for="email">E-Mail</label>
+
+            </div>
+            <div class="input-container">
+                <input id="username" name="username" type="text" required="" class="input-field" />
+                <label for="username">Username</label>
+
+            </div>
+            <div class="input-container">
+                <input id="password" name="password" type="password" required="" class="input-field" />
+                <label for="password">Password</label>
+
+            </div>
+            <div class="input-container">
+                <input id="confirmed_password" name="confirmed_password" type="password" required=""
+                    class="input-field" />
+                <label for="confirmed_password">Confirm Password</label>
+
+            </div>
+            <button type="submit" class="btn">Sign Up</button>
+        </form>
+        <br>
+        <a href="/login" class="underline"><span>I already have an account</span></a>
+    </div>
+</body>
+
+
+</html>

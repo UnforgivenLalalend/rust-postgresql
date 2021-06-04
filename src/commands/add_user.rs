@@ -1,14 +1,15 @@
 use diesel::{pg::PgConnection, RunQueryDsl};
-use sha256::digest;
 
 pub fn add_user<'a>(
     connection: &PgConnection,
+    email: &'a str,
     username: &'a str,
     password: &'a str,
 ) -> super::super::models::User {
     let new_user = super::super::models::NewUser {
+        email,
         username,
-        password: &digest(password),
+        password,
     };
 
     diesel::insert_into(super::super::schema::users::table)

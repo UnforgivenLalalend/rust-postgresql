@@ -13,3 +13,8 @@ pub struct NewUser<'a> {
     pub username: &'a str,
     pub password: &'a str,
 }
+
+pub struct LoginUser {
+    pub username: String,
+    pub password: String,
+}

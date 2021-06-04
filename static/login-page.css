@@ -1,0 +1,73 @@
+body {
+    background-color: #222;
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 300;
+}
+
+.login-box {
+    background-color: white;
+	position:absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%,-50%);
+	border-radius: 10px;
+	padding: 10px 10px 50px 200px;
+}
+
+.login-logo {
+	transform: translate(-88%, 50%);
+    margin-bottom: 50px;
+}
+
+.input-field {
+    border: none;	
+    outline: none;
+    border-bottom: 1px solid gray;
+}
+
+.input-container {
+	position: relative;
+    margin: 20px 0px 10px -110px;
+}
+
+.input-container label {
+	position: absolute;
+	top: -1px;
+	left: 5px;
+    pointer-events: none;
+	color: gray;	
+	transition: all 0.1s ease-out;
+}
+
+.input-container input:focus { 
+    border: none;	
+    outline: none;
+    border-bottom: 1px solid black;	
+}
+
+.btn {
+	padding: 10px 20px;
+    margin: 60px 0px -25px -85px;
+    color:#fff;
+    background-color:#222;
+	cursor: pointer;
+	position: relative;
+    border-radius: 2px;
+    text-transform: uppercase;
+    border: 0;
+
+    opacity: 1;
+    transition: all 0.1s ease-out;
+}
+
+.btn:hover {
+    opacity: 0.7;
+}
+
+.input-container input:focus ~ label,
+.input-container input:valid ~ label {
+	top: -12px;
+    left: 3px;
+    color: #222;
+	font-size: 12px;
+}

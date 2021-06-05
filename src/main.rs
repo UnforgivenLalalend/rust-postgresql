@@ -3,9 +3,9 @@
 #[macro_use]
 extern crate diesel;
 
-use actix_files;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-use commands::show_users::show_users;
+use diesel::{EqAll, QueryDsl, RunQueryDsl};
+use password_hasher::password_hasher_with_salt;
 use regex::Regex;
 use tera::{Context, Tera};
 
@@ -26,6 +26,8 @@ async fn signup_post(
     tera: web::Data<Tera>,
     data: web::Form<models::NewRegistratedUser>,
 ) -> impl Responder {
+    use schema::users::dsl::*;
+
     let connection = connection::establish_connection();
 
     let mut error = Context::new();
@@ -50,20 +52,32 @@ async fn signup_post(
         is_error = true;
     }
 
-    let all_users = show_users(&connection);
-    for user in all_users {
-        if user.email == data.email.trim() {
+    match users
+        .filter(email.eq_all(&data.email))
+        .first::<models::User>(&connection)
+    {
+        Ok(_) => {
             error.insert("err", "Account with simmilar email is already exists");
             is_error = true;
-            break;
+        }
+        Err(_) => {
+            match users
+                .filter(username.eq_all(&data.username))
+                .first::<models::User>(&connection)
+            {
+                Ok(_) => {
+                    error.insert("err", "Account with simmilar username is already exists");
+                    is_error = true;
+                }
+                Err(_) => {}
+            }
         }
     }
 
     if is_error {
-        return HttpResponse::Ok().body(tera.render("signup_error.hbs", &error).unwrap());
+        HttpResponse::Ok().body(tera.render("signup_error.hbs", &error).unwrap())
     } else {
-        let hashed_password =
-            password_hasher(data.username.trim().clone(), data.password.trim().clone());
+        let hashed_password = password_hasher(data.password.trim());
 
         commands::add_user::add_user(
             &connection,
@@ -85,11 +99,14 @@ async fn login_post(tera: web::Data<Tera>, data: web::Form<models::LoginUser>) -
     let connection = connection::establish_connection();
     let all_users = commands::show_users::show_users(&connection);
 
-    let hashed_password =
-        password_hasher(data.username.trim().clone(), data.password.trim().clone());
-
     for user in all_users {
-        if user.username == data.username.trim() && user.password == hashed_password {
+        let password_db = user.password.split("$").collect::<Vec<&str>>();
+        println!("{:?}", password_db);
+        let salt = password_db[3];
+
+        let created_hash = password_hasher_with_salt(salt, &data.password);
+        println!("{}\n{}", created_hash, user.password);
+        if user.username == data.username.trim() && user.password == created_hash {
             return HttpResponse::Ok().body(format!("Successfully logged as: {}", user.username));
         }
     }
@@ -101,21 +118,6 @@ async fn login_post(tera: web::Data<Tera>, data: web::Form<models::LoginUser>) -
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // let connection = connection::establish_connection();
-
-    // update_ids::update_ids(&connection);
-
-    // commands::add_user::add_user(&connection, "user", "hello");
-    // match commands::delete_user::delete_user(&connection, 1) {
-    //     Ok(_) => (),
-    //     Err(err) => {
-    //         println!("{}", err);
-    //         std::process::exit(1)
-    //     }
-    // }
-    // println!("{:#?}", commands::show_users::show_users(&connection));
-
-    // update_ids::update_ids(&connection);
     HttpServer::new(|| {
         let tera = Tera::new("templates/**/*").unwrap();
         App::new()

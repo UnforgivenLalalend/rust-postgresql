@@ -26,7 +26,7 @@ pub struct NewRegistratedUser {
     pub confirmed_password: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Queryable)]
 pub struct LoginUser {
     pub username: String,
     pub password: String,

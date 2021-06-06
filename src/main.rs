@@ -3,13 +3,10 @@
 #[macro_use]
 extern crate diesel;
 
+use actix_identity::{CookieIdentityPolicy, Identity, IdentityService};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use diesel::{EqAll, QueryDsl, RunQueryDsl};
-use password_hasher::password_hasher_with_salt;
-use regex::Regex;
 use tera::{Context, Tera};
-
-use crate::password_hasher::password_hasher;
 
 pub mod commands;
 pub mod connection;
@@ -32,11 +29,11 @@ async fn signup_post(
 
     let mut error = Context::new();
     let mut is_error = false;
-    let email_regex = Regex::new(
+    let email_regex = regex::Regex::new(
         r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})",
     )
     .unwrap();
-    let username_regex = Regex::new(r"[a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?").unwrap();
+    let username_regex = regex::Regex::new(r"[a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?").unwrap();
 
     if !email_regex.is_match(data.email.trim()) {
         error.insert("err", "Incorrect email format");
@@ -77,7 +74,7 @@ async fn signup_post(
     if is_error {
         HttpResponse::Ok().body(tera.render("signup_error.hbs", &error).unwrap())
     } else {
-        let hashed_password = password_hasher(data.password.trim());
+        let hashed_password = password_hasher::password_hasher(data.password.trim());
 
         commands::add_user::add_user(
             &connection,
@@ -91,11 +88,19 @@ async fn signup_post(
     }
 }
 
-async fn login_get(tera: web::Data<Tera>) -> impl Responder {
+async fn login_get(tera: web::Data<Tera>, identificator: Identity) -> impl Responder {
+    if let Some(_) = identificator.identity() {
+        return HttpResponse::Ok().body("Already logged in.");
+    }
+
     HttpResponse::Ok().body(tera.render("login.html", &Context::new()).unwrap())
 }
 
-async fn login_post(tera: web::Data<Tera>, data: web::Form<models::LoginUser>) -> impl Responder {
+async fn login_post(
+    tera: web::Data<Tera>,
+    data: web::Form<models::LoginUser>,
+    identificator: Identity,
+) -> impl Responder {
     use schema::users::dsl::*;
     let connection = connection::establish_connection();
 
@@ -108,7 +113,9 @@ async fn login_post(tera: web::Data<Tera>, data: web::Form<models::LoginUser>) -
             let password_db = u.password.split("$").collect::<Vec<&str>>();
             let salt = password_db[3];
 
-            if u.password == password_hasher_with_salt(salt, &data.password) {
+            if u.password == password_hasher::password_hasher_with_salt(salt, &data.password) {
+                let session_token = String::from(&u.username);
+                identificator.remember(session_token);
                 return HttpResponse::Ok().body(format!("Successfully logged as: {}", u.username));
             } else {
                 let mut error = Context::new();
@@ -124,11 +131,21 @@ async fn login_post(tera: web::Data<Tera>, data: web::Form<models::LoginUser>) -
     }
 }
 
+async fn logout(identificator: Identity) -> impl Responder {
+    identificator.forget();
+    HttpResponse::Ok().body("Logged out.")
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         let tera = Tera::new("templates/**/*").unwrap();
         App::new()
+            .wrap(IdentityService::new(
+                CookieIdentityPolicy::new(&[0; 32])
+                    .name("auth-cookie")
+                    .secure(false),
+            ))
             .service(
                 actix_files::Files::new(
                     "/static",
@@ -141,6 +158,7 @@ async fn main() -> std::io::Result<()> {
             .route("/signup", web::post().to(signup_post))
             .route("/login", web::get().to(login_get))
             .route("/login", web::post().to(login_post))
+            .route("/logout", web::to(logout))
     })
     .bind("127.0.0.1:8000")?
     .run()

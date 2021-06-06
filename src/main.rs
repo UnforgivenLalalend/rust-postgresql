@@ -96,24 +96,32 @@ async fn login_get(tera: web::Data<Tera>) -> impl Responder {
 }
 
 async fn login_post(tera: web::Data<Tera>, data: web::Form<models::LoginUser>) -> impl Responder {
+    use schema::users::dsl::*;
     let connection = connection::establish_connection();
-    let all_users = commands::show_users::show_users(&connection);
 
-    for user in all_users {
-        let password_db = user.password.split("$").collect::<Vec<&str>>();
-        println!("{:?}", password_db);
-        let salt = password_db[3];
+    let user = users
+        .filter(username.eq_all(&data.username))
+        .first::<models::User>(&connection);
 
-        let created_hash = password_hasher_with_salt(salt, &data.password);
-        println!("{}\n{}", created_hash, user.password);
-        if user.username == data.username.trim() && user.password == created_hash {
-            return HttpResponse::Ok().body(format!("Successfully logged as: {}", user.username));
+    match user {
+        Ok(u) => {
+            let password_db = u.password.split("$").collect::<Vec<&str>>();
+            let salt = password_db[3];
+
+            if u.password == password_hasher_with_salt(salt, &data.password) {
+                return HttpResponse::Ok().body(format!("Successfully logged as: {}", u.username));
+            } else {
+                let mut error = Context::new();
+                error.insert("err", "Incorrect login or password");
+                HttpResponse::Ok().body(tera.render("login_error.hbs", &error).unwrap())
+            }
+        }
+        Err(_) => {
+            let mut error = Context::new();
+            error.insert("err", "Incorrect login or password");
+            HttpResponse::Ok().body(tera.render("login_error.hbs", &error).unwrap())
         }
     }
-
-    let mut error = Context::new();
-    error.insert("err", "Incorrect login or password");
-    HttpResponse::Ok().body(tera.render("login_error.hbs", &error).unwrap())
 }
 
 #[actix_web::main]

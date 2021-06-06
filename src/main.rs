@@ -15,8 +15,28 @@ pub mod password_hasher;
 pub mod schema;
 pub mod update_ids;
 
+async fn index_get(tera: web::Data<Tera>, identificator: Identity) -> impl Responder {
+    let mut data = Context::new();
+
+    if let Some(id) = identificator.identity() {
+        data.insert("link1", "/logout");
+        data.insert("link_text1", "Logout");
+        data.insert("link2", "/");
+        data.insert("link_text2", &id);
+
+        return HttpResponse::Ok().body(tera.render("index.hbs", &data).unwrap());
+    }
+
+    data.insert("link1", "/signup");
+    data.insert("link_text1", "Sign Up");
+    data.insert("link2", "/login");
+    data.insert("link_text2", "Sign In");
+
+    HttpResponse::Ok().body(tera.render("index.hbs", &data).unwrap())
+}
+
 async fn signup_get(tera: web::Data<Tera>) -> impl Responder {
-    HttpResponse::Ok().body(tera.render("signup.html", &Context::new()).unwrap())
+    HttpResponse::Ok().body(tera.render("signup.hbs", &Context::new()).unwrap())
 }
 
 async fn signup_post(
@@ -84,7 +104,8 @@ async fn signup_post(
         );
         update_ids::update_ids(&connection);
         println!("{:?}", data);
-        return HttpResponse::Ok().body(format!("Successfully saved user: {}", data.username));
+
+        HttpResponse::PermanentRedirect().body(tera.render("login.hbs", &Context::new()).unwrap())
     }
 }
 
@@ -93,7 +114,7 @@ async fn login_get(tera: web::Data<Tera>, identificator: Identity) -> impl Respo
         return HttpResponse::Ok().body("Already logged in.");
     }
 
-    HttpResponse::Ok().body(tera.render("login.html", &Context::new()).unwrap())
+    HttpResponse::Ok().body(tera.render("login.hbs", &Context::new()).unwrap())
 }
 
 async fn login_post(
@@ -116,7 +137,16 @@ async fn login_post(
             if u.password == password_hasher::password_hasher_with_salt(salt, &data.password) {
                 let session_token = String::from(&u.username);
                 identificator.remember(session_token);
-                return HttpResponse::Ok().body(format!("Successfully logged as: {}", u.username));
+
+                let mut index_data = Context::new();
+
+                index_data.insert("link1", "/logout");
+                index_data.insert("link_text1", "Logout");
+                index_data.insert("link2", "/");
+                index_data.insert("link_text2", &identificator.identity().unwrap());
+
+                return HttpResponse::MovedPermanently()
+                    .body(tera.render("index.hbs", &index_data).unwrap());
             } else {
                 let mut error = Context::new();
                 error.insert("err", "Incorrect login or password");
@@ -132,8 +162,12 @@ async fn login_post(
 }
 
 async fn logout(identificator: Identity) -> impl Responder {
-    identificator.forget();
-    HttpResponse::Ok().body("Logged out.")
+    if let Some(_) = identificator.identity() {
+        identificator.forget();
+        return HttpResponse::Ok().body("Logged out.");
+    }
+
+    HttpResponse::Ok().body("You are not sign in yet.")
 }
 
 #[actix_web::main]
@@ -154,6 +188,7 @@ async fn main() -> std::io::Result<()> {
                 .show_files_listing(),
             )
             .data(tera)
+            .route("/", web::get().to(index_get))
             .route("/signup", web::get().to(signup_get))
             .route("/signup", web::post().to(signup_post))
             .route("/login", web::get().to(login_get))

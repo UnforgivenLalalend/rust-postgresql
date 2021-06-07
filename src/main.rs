@@ -16,22 +16,28 @@ pub mod schema;
 pub mod update_ids;
 
 async fn index_get(tera: web::Data<Tera>, identificator: Identity) -> impl Responder {
-    let mut data = Context::new();
+    use schema::products::dsl::*;
 
-    if let Some(id) = identificator.identity() {
+    let mut data = Context::new();
+    let connection = connection::establish_connection();
+
+    if let Some(identificator) = identificator.identity() {
         data.insert("link1", "/logout");
         data.insert("link_text1", "Logout");
         data.insert("link2", "/");
-        data.insert("link_text2", &id);
-
-        return HttpResponse::Ok().body(tera.render("index.hbs", &data).unwrap());
+        data.insert("link_text2", &identificator);
+    } else {
+        data.insert("link1", "/signup");
+        data.insert("link_text1", "Sign Up");
+        data.insert("link2", "/signin");
+        data.insert("link_text2", "Sign In");
     }
 
-    data.insert("link1", "/signup");
-    data.insert("link_text1", "Sign Up");
-    data.insert("link2", "/signin");
-    data.insert("link_text2", "Sign In");
+    let all_products = products
+        .load::<models::Product>(&connection)
+        .expect("Error getting all products");
 
+    data.insert("products", &all_products);
     HttpResponse::Ok().body(tera.render("index.hbs", &data).unwrap())
 }
 
@@ -96,12 +102,15 @@ async fn signup_post(
         HttpResponse::Ok().body(tera.render("signup_error.hbs", &error).unwrap())
     } else {
         let hashed_password = password_hasher::password_hasher(data.password.trim());
+        let date_chrono = chrono::prelude::Utc::now().to_string();
+        let date_parsed = date_chrono.split_ascii_whitespace().collect::<Vec<&str>>();
 
         commands::add_user::add_user(
             &connection,
             &data.email.trim(),
             &data.username.trim(),
             &hashed_password,
+            date_parsed[0],
         );
         update_ids::update_ids(&connection);
         let session_token = String::from(&data.username);
@@ -133,6 +142,14 @@ async fn signin_post(
 ) -> impl Responder {
     use schema::users::dsl::*;
     let connection = connection::establish_connection();
+
+    let username_regex = regex::Regex::new(r"[a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?").unwrap();
+    if !username_regex.is_match(&data.username) {
+        let mut error = Context::new();
+        error.insert("err", "Incorrect username format");
+
+        return HttpResponse::Ok().body(tera.render("signin_error.hbs", &error).unwrap());
+    }
 
     let user = users
         .filter(username.eq_all(&data.username))

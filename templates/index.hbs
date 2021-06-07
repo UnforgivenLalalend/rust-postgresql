@@ -18,7 +18,20 @@
                     class="logo"></a>
         </li>
     </ul>
-    <button class="btn">Добавить в корзину</button>
+
+    <div class="wraper-wide product-cards">
+        {% for product in products %}
+        <a href="/product_id={{ product.id }}" class="product-card">
+            <img src="/static/images/{{ product.id }}.png" class="product-card__img">
+            <div class="product-card__name">{{ product.name }}</div>
+            <div class="product-card__price preview_price_wrap">
+                <div>
+                    {{ product.price }}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
 </body>
 
 </html>

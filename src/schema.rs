@@ -12,6 +12,8 @@ table! {
         email -> Text,
         username -> Text,
         password -> Text,
+        date -> Text,
+        access_level -> Bool,
     }
 }
 

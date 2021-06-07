@@ -12,9 +12,8 @@ a {
 }
 
 .login-box {
-    position: relative;
     width: 100;
-    height: 389;
+    height: 370;
     background-color: white;
 	position:absolute;
 	left: 50%;
@@ -84,6 +83,7 @@ a {
 .underline{
     position: absolute;
     text-align: center;
+    left: 65px;
 }
 
 .underline::before{

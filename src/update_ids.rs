@@ -14,7 +14,7 @@ pub fn update_ids(connection: &PgConnection) {
 
         diesel::insert_into(super::schema::users::table)
             .values(&all_users[updated_id - 1])
-            .get_result::<(i32, String, String, String)>(connection)
+            .get_result::<(i32, String, String, String, String, bool)>(connection)
             .unwrap();
     }
 }

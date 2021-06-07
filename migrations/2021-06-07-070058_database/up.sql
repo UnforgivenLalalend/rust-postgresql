@@ -5,6 +5,9 @@ CREATE TABLE users (
     email TEXT NOT NULL,
     username TEXT NOT NULL,
     password TEXT NOT NULL,
+    date TEXT NOT NULL,
+    access_level BOOLEAN NOT NULL,
+
 
     UNIQUE(email),
     UNIQUE(username)
@@ -14,4 +17,4 @@ CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     price TEXT NOT NULL
-);
+)

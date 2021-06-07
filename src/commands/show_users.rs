@@ -7,5 +7,5 @@ pub fn show_users(connection: &PgConnection) -> Vec<User> {
 
     users
         .load::<super::super::models::User>(connection)
-        .expect("Error showing users")
+        .expect("Error getting all users")
 }

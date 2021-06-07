@@ -38,7 +38,7 @@ body {
     color:#fff;
     background-color: transparent;
 	cursor: pointer;
-    border-radius: 2px;
+    border-radius: 8px;
     border-color: white;
     border: 2px solid white;
 
@@ -51,11 +51,10 @@ body {
 }
 
 .underline {
-    text-align: center;
+    color: rgb(133, 133, 133);
     top: 13px;
     margin: 0px 35px 0px 25px;
     text-decoration: none;
-    color: white;
     position: relative;
     text-align: center;
 }
@@ -68,11 +67,15 @@ body {
     width: 0;
     height: 2px;
     border-radius: 20px;
-    background-color: rgb(175, 175, 175);
+    background-color: rgb(255, 255, 255);
     transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 @media (hover: hover) and (pointer: fine) {
+    .underline:hover {
+        color: rgb(209, 209, 209);
+        transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    }
     .underline:hover::before{
         left: 0;
         right: auto;

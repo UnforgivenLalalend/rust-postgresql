@@ -29,7 +29,7 @@ async fn index_get(tera: web::Data<Tera>, identificator: Identity) -> impl Respo
 
     data.insert("link1", "/signup");
     data.insert("link_text1", "Sign Up");
-    data.insert("link2", "/login");
+    data.insert("link2", "/signin");
     data.insert("link_text2", "Sign In");
 
     HttpResponse::Ok().body(tera.render("index.hbs", &data).unwrap())
@@ -42,6 +42,7 @@ async fn signup_get(tera: web::Data<Tera>) -> impl Responder {
 async fn signup_post(
     tera: web::Data<Tera>,
     data: web::Form<models::NewRegistratedUser>,
+    identificator: Identity,
 ) -> impl Responder {
     use schema::users::dsl::*;
 
@@ -103,21 +104,29 @@ async fn signup_post(
             &hashed_password,
         );
         update_ids::update_ids(&connection);
-        println!("{:?}", data);
+        let session_token = String::from(&data.username);
+        identificator.remember(session_token);
 
-        HttpResponse::PermanentRedirect().body(tera.render("login.hbs", &Context::new()).unwrap())
+        let mut index_data = Context::new();
+
+        index_data.insert("link1", "/logout");
+        index_data.insert("link_text1", "Logout");
+        index_data.insert("link2", "/");
+        index_data.insert("link_text2", &identificator.identity().unwrap());
+
+        return HttpResponse::SeeOther().header("Location", "/").finish();
     }
 }
 
-async fn login_get(tera: web::Data<Tera>, identificator: Identity) -> impl Responder {
+async fn signin_get(tera: web::Data<Tera>, identificator: Identity) -> impl Responder {
     if let Some(_) = identificator.identity() {
         return HttpResponse::Ok().body("Already logged in.");
     }
 
-    HttpResponse::Ok().body(tera.render("login.hbs", &Context::new()).unwrap())
+    HttpResponse::Ok().body(tera.render("signin.hbs", &Context::new()).unwrap())
 }
 
-async fn login_post(
+async fn signin_post(
     tera: web::Data<Tera>,
     data: web::Form<models::LoginUser>,
     identificator: Identity,
@@ -145,18 +154,17 @@ async fn login_post(
                 index_data.insert("link2", "/");
                 index_data.insert("link_text2", &identificator.identity().unwrap());
 
-                return HttpResponse::MovedPermanently()
-                    .body(tera.render("index.hbs", &index_data).unwrap());
+                return HttpResponse::SeeOther().header("Location", "/").finish();
             } else {
                 let mut error = Context::new();
                 error.insert("err", "Incorrect login or password");
-                HttpResponse::Ok().body(tera.render("login_error.hbs", &error).unwrap())
+                HttpResponse::Ok().body(tera.render("signin_error.hbs", &error).unwrap())
             }
         }
         Err(_) => {
             let mut error = Context::new();
             error.insert("err", "Incorrect login or password");
-            HttpResponse::Ok().body(tera.render("login_error.hbs", &error).unwrap())
+            HttpResponse::Ok().body(tera.render("signin_error.hbs", &error).unwrap())
         }
     }
 }
@@ -164,10 +172,9 @@ async fn login_post(
 async fn logout(identificator: Identity) -> impl Responder {
     if let Some(_) = identificator.identity() {
         identificator.forget();
-        return HttpResponse::Ok().body("Logged out.");
     }
 
-    HttpResponse::Ok().body("You are not sign in yet.")
+    HttpResponse::SeeOther().header("Location", "/").finish()
 }
 
 #[actix_web::main]
@@ -191,8 +198,8 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(index_get))
             .route("/signup", web::get().to(signup_get))
             .route("/signup", web::post().to(signup_post))
-            .route("/login", web::get().to(login_get))
-            .route("/login", web::post().to(login_post))
+            .route("/signin", web::get().to(signin_get))
+            .route("/signin", web::post().to(signin_post))
             .route("/logout", web::to(logout))
     })
     .bind("127.0.0.1:8000")?
